@@ -1,0 +1,7 @@
+{
+  "name": "Mart Manager AI",
+  "description": "Smart inventory management for groceries with AI-powered image analysis for price and product extraction.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
