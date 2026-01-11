@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Camera, Package, BarChart3, Plus, Trash2, 
   Search, AlertCircle, Save, X, Settings, 
-  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon, Key, CheckCircle2
+  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon, Key, CheckCircle2, RefreshCcw
 } from 'lucide-react';
 import { Mart, InventoryItem, AnalysisResult, Tab } from './types';
 import { analyzeMartImage } from './geminiService';
@@ -69,6 +69,14 @@ const App: React.FC = () => {
       setTempApiKey("");
       setShowKeyConfirm(true);
       setTimeout(() => setShowKeyConfirm(false), 3000);
+    }
+  };
+
+  const handleClearApiKey = () => {
+    if (confirm("저장된 API 키를 삭제하시겠습니까?")) {
+      localStorage.removeItem('mm_api_key');
+      setApiKey("");
+      setTempApiKey("");
     }
   };
 
@@ -153,7 +161,6 @@ const App: React.FC = () => {
     reader.onloadend = async () => {
       const base64 = (reader.result as string).split(',')[1];
       try {
-        // analyzeMartImage implementation should ideally pick up the key from localStorage or env
         const results = await analyzeMartImage(base64);
         setAnalysisResults(results);
       } catch (err) {
@@ -348,7 +355,18 @@ const App: React.FC = () => {
           <div className="p-6 space-y-6">
             <div className="bg-white dark:bg-[#1C1F26] p-8 rounded-[3rem] border border-gray-100 dark:border-gray-800 shadow-sm space-y-8">
               <div className="space-y-2">
-                <h3 className="font-black text-xl text-gray-900 dark:text-gray-100">AI 모델 설정</h3>
+                <div className="flex justify-between items-center">
+                  <h3 className="font-black text-xl text-gray-900 dark:text-gray-100">AI 모델 설정</h3>
+                  {apiKey && (
+                    <button 
+                      onClick={handleClearApiKey}
+                      className="p-2 text-gray-400 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors"
+                      title="API 키 삭제"
+                    >
+                      <RefreshCcw size={16} />
+                    </button>
+                  )}
+                </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">인식 기능을 사용하려면 Google API 키가 필요합니다.</p>
               </div>
 
