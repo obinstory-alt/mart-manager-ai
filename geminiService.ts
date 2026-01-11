@@ -2,13 +2,23 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const analyzeMartImage = async (base64Data: string) => {
-  // Try to get API key from local storage first, then fall back to env
   const savedKey = localStorage.getItem('mm_api_key');
   const apiKey = savedKey || process.env.API_KEY || '';
   
   const ai = new GoogleGenAI({ apiKey });
   
-  const prompt = "Extract product name, price, and unit from this supermarket shelf or receipt image. Return as JSON.";
+  // 프롬프트를 강화하여 쇼핑몰 캡처본 분석 효율을 높임
+  const prompt = `
+    Analyze this image which is either a supermarket shelf photo, a paper receipt, or a mobile screenshot from a shopping app (like Naver Store, Coupang, Market Kurly).
+    
+    Extract the following for each grocery or product item found:
+    1. Product Name: Clean name of the item.
+    2. Price: Final price (after discounts if visible).
+    3. Unit: Measurement like '1ea', '100g', '1 pack', '500ml' etc.
+    
+    If it's a mobile shopping app screenshot, focus on the main product title and the prominently displayed price.
+    Return the result as a JSON object with a 'products' array.
+  `;
   
   try {
     const response = await ai.models.generateContent({
