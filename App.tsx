@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Camera, Package, BarChart3, Plus, Trash2, 
   Search, AlertCircle, Save, X, Settings, 
-  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon, Key, CheckCircle2, RefreshCcw, Info
+  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon, Key, CheckCircle2, RefreshCcw, Info, Download, Upload
 } from 'lucide-react';
 import { Mart, InventoryItem, AnalysisResult, Tab } from './types';
 import { analyzeMartImage } from './geminiService';
@@ -51,6 +51,7 @@ const App: React.FC = () => {
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
 
   // --- Persistent Storage ---
   useEffect(() => {
@@ -78,6 +79,49 @@ const App: React.FC = () => {
       setApiKey("");
       setTempApiKey("");
     }
+  };
+
+  const handleBackupData = () => {
+    const backupData = {
+      marts,
+      inventory,
+      version: "1.0",
+      timestamp: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `mart_manager_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRestoreData = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (json.marts && json.inventory) {
+          if (confirm("기존 데이터가 백업 파일의 데이터로 덮어씌워집니다. 계속하시겠습니까?")) {
+            setMarts(json.marts);
+            setInventory(json.inventory);
+            alert("복원이 완료되었습니다.");
+          }
+        } else {
+          alert("유효한 백업 파일이 아닙니다.");
+        }
+      } catch (err) {
+        alert("파일을 읽는 중 오류가 발생했습니다.");
+      }
+    };
+    reader.readAsText(file);
+    if (e.target) e.target.value = '';
   };
 
   const frequentItems = useMemo(() => {
@@ -170,7 +214,6 @@ const App: React.FC = () => {
       }
     };
     reader.readAsDataURL(file);
-    // Reset input
     if (e.target) e.target.value = '';
   };
 
@@ -305,6 +348,7 @@ const App: React.FC = () => {
                   </p>
                   <p className="text-[8px] text-gray-400 dark:text-gray-500">{item.date}</p>
                 </div>
+                {/* Fixed reference to 'item.id' instead of 'id' */}
                 <button onClick={() => removeFromInventory(item.id)} className="text-gray-200 dark:text-gray-700 hover:text-red-400 p-2 transition-colors">
                   <Trash2 size={18} />
                 </button>
@@ -404,6 +448,37 @@ const App: React.FC = () => {
                 {showKeyConfirm && (
                   <p className="text-center text-green-500 text-[10px] font-black animate-in fade-in">성공적으로 저장되었습니다!</p>
                 )}
+              </div>
+            </div>
+
+            {/* Backup & Restore Section */}
+            <div className="bg-white dark:bg-[#1C1F26] p-8 rounded-[3rem] border border-gray-100 dark:border-gray-800 shadow-sm space-y-6">
+              <div className="space-y-1">
+                <h3 className="font-black text-xl text-gray-900 dark:text-gray-100">데이터 백업 및 복원</h3>
+                <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">내 장부 데이터를 파일로 보관하세요.</p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={handleBackupData}
+                  className="flex flex-col items-center gap-3 p-5 bg-gray-50 dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 hover:border-indigo-200 dark:hover:border-indigo-900 transition-all active:scale-95"
+                >
+                  <div className="p-3 bg-indigo-600 dark:bg-indigo-500 text-white rounded-2xl shadow-lg">
+                    <Download size={20} />
+                  </div>
+                  <span className="text-[11px] font-black text-gray-700 dark:text-gray-300">내보내기</span>
+                </button>
+                
+                <button 
+                  onClick={() => backupInputRef.current?.click()}
+                  className="flex flex-col items-center gap-3 p-5 bg-gray-50 dark:bg-gray-800 rounded-[2rem] border border-gray-100 dark:border-gray-700 hover:border-emerald-200 dark:hover:border-emerald-900 transition-all active:scale-95"
+                >
+                  <div className="p-3 bg-emerald-600 dark:bg-emerald-500 text-white rounded-2xl shadow-lg">
+                    <Upload size={20} />
+                  </div>
+                  <span className="text-[11px] font-black text-gray-700 dark:text-gray-300">불러오기</span>
+                </button>
+                <input type="file" ref={backupInputRef} className="hidden" accept=".json" onChange={handleRestoreData} />
               </div>
             </div>
 
