@@ -2,8 +2,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const analyzeMartImage = async (base64Data: string) => {
-  // Use current API key from environment
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Try to get API key from local storage first, then fall back to env
+  const savedKey = localStorage.getItem('mm_api_key');
+  const apiKey = savedKey || process.env.API_KEY || '';
+  
+  const ai = new GoogleGenAI({ apiKey });
   
   const prompt = "Extract product name, price, and unit from this supermarket shelf or receipt image. Return as JSON.";
   
