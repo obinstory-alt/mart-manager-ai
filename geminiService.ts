@@ -5,9 +5,9 @@ export const analyzeMartImage = async (base64Data: string) => {
   const savedKey = localStorage.getItem('mm_api_key');
   const apiKey = savedKey || process.env.API_KEY || '';
   
+  // Initialize with the correct named parameter
   const ai = new GoogleGenAI({ apiKey });
   
-  // 프롬프트를 강화하여 쇼핑몰 캡처본 분석 효율을 높임
   const prompt = `
     Analyze this image which is either a supermarket shelf photo, a paper receipt, or a mobile screenshot from a shopping app (like Naver Store, Coupang, Market Kurly).
     
@@ -21,6 +21,7 @@ export const analyzeMartImage = async (base64Data: string) => {
   `;
   
   try {
+    // Call generateContent directly from ai.models
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [
@@ -59,6 +60,7 @@ export const analyzeMartImage = async (base64Data: string) => {
       }
     });
 
+    // Access .text property directly (not a method)
     const text = response.text;
     if (!text) throw new Error("No data returned from AI");
     return JSON.parse(text).products;
