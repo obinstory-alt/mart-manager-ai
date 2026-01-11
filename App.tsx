@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Camera, Package, BarChart3, Plus, Trash2, 
   Search, AlertCircle, Save, X, Settings, 
-  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon, Key, CheckCircle2, RefreshCcw
+  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon, Key, CheckCircle2, RefreshCcw, Info
 } from 'lucide-react';
 import { Mart, InventoryItem, AnalysisResult, Tab } from './types';
 import { analyzeMartImage } from './geminiService';
@@ -170,6 +170,8 @@ const App: React.FC = () => {
       }
     };
     reader.readAsDataURL(file);
+    // Reset input
+    if (e.target) e.target.value = '';
   };
 
   // --- Sub-Views ---
@@ -222,7 +224,7 @@ const App: React.FC = () => {
       <div className="bg-indigo-600 dark:bg-indigo-500 p-8 rounded-[2.5rem] text-white shadow-2xl flex justify-between items-center relative overflow-hidden group active:scale-[0.98] transition-all cursor-pointer" onClick={() => setShowAiModal(true)}>
         <div className="z-10">
           <h4 className="font-black text-xl">AI 스마트 인식</h4>
-          <p className="text-indigo-100 text-sm mt-1">사진 한 장으로 가격 등록</p>
+          <p className="text-indigo-100 text-sm mt-1">네이버 캡처, 촬영으로 등록</p>
         </div>
         <div className="bg-white dark:bg-gray-100 text-indigo-600 p-5 rounded-2xl shadow-xl z-10">
           <Camera size={32} />
@@ -496,12 +498,25 @@ const App: React.FC = () => {
             <div className="p-8">
               {!isAiLoading && !analysisResults && (
                 <div className="space-y-6">
-                  <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-5 rounded-3xl space-y-2">
-                    <p className="text-[10px] font-black text-indigo-400 dark:text-indigo-500 uppercase tracking-widest">저장될 마트 선택</p>
+                  {/* Guide Message for Naver Store Capture */}
+                  <div className="flex items-start gap-4 p-5 bg-indigo-50 dark:bg-indigo-900/30 rounded-3xl border border-indigo-100 dark:border-indigo-800">
+                    <div className="p-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-xl shrink-0">
+                      <Info size={20} />
+                    </div>
+                    <div>
+                      <p className="font-black text-sm text-indigo-900 dark:text-indigo-100">스마트 쇼핑 팁</p>
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium mt-1 leading-relaxed">
+                        네이버스토어나 마켓컬리 상품 페이지를 <span className="font-black text-indigo-700 dark:text-indigo-300 underline underline-offset-2">캡처(스크린샷)</span>해서 올려보세요. AI가 가격을 즉시 읽어냅니다!
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white dark:bg-gray-800/50 p-5 rounded-3xl space-y-2 border border-gray-100 dark:border-gray-800">
+                    <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">저장될 마트 선택</p>
                     <select 
                       value={selectedMartId === 'all' ? (marts[0]?.id || 1) : selectedMartId} 
                       onChange={(e) => setSelectedMartId(Number(e.target.value))}
-                      className="w-full bg-white dark:bg-gray-800 border-none rounded-2xl py-4 px-5 shadow-sm text-sm font-bold focus:ring-2 focus:ring-indigo-400 dark:text-gray-200"
+                      className="w-full bg-gray-50 dark:bg-gray-800 border-none rounded-2xl py-4 px-5 shadow-sm text-sm font-bold focus:ring-2 focus:ring-indigo-400 dark:text-gray-200"
                     >
                       {marts.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                     </select>
@@ -509,24 +524,24 @@ const App: React.FC = () => {
 
                   <div className="grid grid-cols-1 gap-4">
                     <button 
+                      onClick={() => galleryInputRef.current?.click()}
+                      className="group flex items-center gap-5 p-6 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-[2.5rem] active:scale-95 transition-all shadow-sm hover:shadow-md"
+                    >
+                      <div className="w-14 h-14 bg-emerald-600 dark:bg-emerald-500 text-white rounded-[1.5rem] flex items-center justify-center group-hover:scale-110 transition-transform shadow-xl shadow-emerald-100 dark:shadow-none"><ImageIcon size={24}/></div>
+                      <div className="text-left">
+                        <p className="font-black text-base text-gray-900 dark:text-gray-100 leading-none">이미지/캡처 업로드</p>
+                        <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1.5 tracking-tight uppercase">스크린샷 분석에 최적화</p>
+                      </div>
+                    </button>
+
+                    <button 
                       onClick={() => cameraInputRef.current?.click()}
                       className="group flex items-center gap-5 p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[2.5rem] active:scale-95 transition-all shadow-sm hover:shadow-md"
                     >
                       <div className="w-14 h-14 bg-indigo-600 dark:bg-indigo-500 text-white rounded-[1.5rem] flex items-center justify-center group-hover:rotate-12 transition-transform shadow-xl shadow-indigo-100 dark:shadow-none"><Camera size={24}/></div>
                       <div className="text-left">
-                        <p className="font-black text-base text-gray-900 dark:text-gray-100 leading-none">카메라로 바로 찍기</p>
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 font-bold mt-1.5">진열대 앞에서 실시간 등록</p>
-                      </div>
-                    </button>
-
-                    <button 
-                      onClick={() => galleryInputRef.current?.click()}
-                      className="group flex items-center gap-5 p-6 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[2.5rem] active:scale-95 transition-all shadow-sm hover:shadow-md"
-                    >
-                      <div className="w-14 h-14 bg-emerald-600 dark:bg-emerald-500 text-white rounded-[1.5rem] flex items-center justify-center group-hover:rotate-12 transition-transform shadow-xl shadow-emerald-100 dark:shadow-none"><ImageIcon size={24}/></div>
-                      <div className="text-left">
-                        <p className="font-black text-base text-gray-900 dark:text-gray-100 leading-none">이미지/캡처 업로드</p>
-                        <p className="text-[11px] text-gray-400 dark:text-gray-500 font-bold mt-1.5">영수증이나 갤러리 사진 분석</p>
+                        <p className="font-black text-base text-gray-900 dark:text-gray-100 leading-none">실시간 카메라 촬영</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500 font-bold mt-1.5 tracking-tight uppercase">오프라인 마트에서 사용</p>
                       </div>
                     </button>
                   </div>
@@ -564,7 +579,7 @@ const App: React.FC = () => {
                 <div className="space-y-4 max-h-[450px] overflow-y-auto pr-2 no-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <div className="flex justify-between items-end mb-4 px-1">
                     <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">분석된 항목 ({analysisResults.length})</p>
-                    <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase">전체 저장</p>
+                    <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-tighter">정보가 정확한지 확인해 주세요</p>
                   </div>
                   {analysisResults.map((item, idx) => (
                     <div key={idx} className="flex justify-between items-center p-5 bg-indigo-50/30 dark:bg-indigo-900/20 rounded-[2rem] border border-indigo-50 dark:border-indigo-900/30 group hover:bg-white dark:hover:bg-gray-800 hover:shadow-xl transition-all hover:-translate-y-1">
