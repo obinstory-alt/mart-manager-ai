@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Camera, Package, BarChart3, Plus, Trash2, 
   Search, AlertCircle, Save, X, Settings, 
-  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon
+  Star, ArrowUpDown, ImageIcon, Monitor, ChevronRight, Sun, Moon, Key, CheckCircle2
 } from 'lucide-react';
 import { Mart, InventoryItem, AnalysisResult, Tab } from './types';
 import { analyzeMartImage } from './geminiService';
@@ -35,6 +35,10 @@ const App: React.FC = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('mm_api_key') || "");
+  const [tempApiKey, setTempApiKey] = useState("");
+  const [showKeyConfirm, setShowKeyConfirm] = useState(false);
+
   const [activeTab, setActiveTab] = useState<Tab>(Tab.DASHBOARD);
   const [selectedMartId, setSelectedMartId] = useState<number | 'all'>('all');
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -57,7 +61,17 @@ const App: React.FC = () => {
     localStorage.setItem('mm_local_inventory', JSON.stringify(inventory));
   }, [inventory]);
 
-  // --- Computed Data ---
+  // --- Actions ---
+  const handleSaveApiKey = () => {
+    if (tempApiKey.trim()) {
+      localStorage.setItem('mm_api_key', tempApiKey.trim());
+      setApiKey(tempApiKey.trim());
+      setTempApiKey("");
+      setShowKeyConfirm(true);
+      setTimeout(() => setShowKeyConfirm(false), 3000);
+    }
+  };
+
   const frequentItems = useMemo(() => {
     return inventory.filter(item => item.isPinned).slice(0, 20);
   }, [inventory]);
@@ -81,7 +95,6 @@ const App: React.FC = () => {
       }));
   }, [inventory, marts]);
 
-  // --- Actions ---
   const addToInventory = (item: AnalysisResult) => {
     const targetMartId = selectedMartId === 'all' ? (marts[0]?.id || 1) : selectedMartId;
     const newItem: InventoryItem = {
@@ -127,6 +140,12 @@ const App: React.FC = () => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (!process.env.API_KEY && !apiKey) {
+      setErrorMessage("설정 탭에서 Google API 키를 먼저 등록해주세요.");
+      setShowAiModal(true);
+      return;
+    }
+
     setIsAiLoading(true);
     setErrorMessage("");
 
@@ -134,10 +153,11 @@ const App: React.FC = () => {
     reader.onloadend = async () => {
       const base64 = (reader.result as string).split(',')[1];
       try {
+        // analyzeMartImage implementation should ideally pick up the key from localStorage or env
         const results = await analyzeMartImage(base64);
         setAnalysisResults(results);
       } catch (err) {
-        setErrorMessage("AI 분석 중 오류가 발생했습니다. 다시 시도해 주세요.");
+        setErrorMessage("AI 분석 중 오류가 발생했습니다. API 키가 유효한지 확인해주세요.");
       } finally {
         setIsAiLoading(false);
       }
@@ -326,9 +346,50 @@ const App: React.FC = () => {
         {activeTab === Tab.INVENTORY && <InventoryView />}
         {activeTab === Tab.SETTINGS && (
           <div className="p-6 space-y-6">
+            <div className="bg-white dark:bg-[#1C1F26] p-8 rounded-[3rem] border border-gray-100 dark:border-gray-800 shadow-sm space-y-8">
+              <div className="space-y-2">
+                <h3 className="font-black text-xl text-gray-900 dark:text-gray-100">AI 모델 설정</h3>
+                <p className="text-xs text-gray-400 dark:text-gray-500 font-medium">인식 기능을 사용하려면 Google API 키가 필요합니다.</p>
+              </div>
+
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between px-1">
+                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                      <Key size={12} /> Google API Key
+                    </label>
+                    {apiKey && (
+                      <span className="text-[9px] font-black text-green-500 flex items-center gap-1">
+                        <CheckCircle2 size={10} /> 키 등록됨
+                      </span>
+                    )}
+                  </div>
+                  <input 
+                    type="password"
+                    value={tempApiKey}
+                    onChange={(e) => setTempApiKey(e.target.value)}
+                    placeholder={apiKey ? "••••••••••••••••" : "API 키를 입력하세요"}
+                    className="w-full px-5 py-4 bg-gray-50 dark:bg-gray-800 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 dark:text-white font-mono text-xs shadow-inner"
+                  />
+                </div>
+
+                <button 
+                  onClick={handleSaveApiKey}
+                  disabled={!tempApiKey.trim()}
+                  className={`w-full py-4 rounded-2xl font-black text-sm flex items-center justify-center gap-2 transition-all ${tempApiKey.trim() ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-lg shadow-indigo-100 dark:shadow-none active:scale-95' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'}`}
+                >
+                  <Save size={18} /> 설정 저장하기
+                </button>
+
+                {showKeyConfirm && (
+                  <p className="text-center text-green-500 text-[10px] font-black animate-in fade-in">성공적으로 저장되었습니다!</p>
+                )}
+              </div>
+            </div>
+
             <div className="bg-white dark:bg-[#1C1F26] p-8 rounded-[3rem] border border-gray-100 dark:border-gray-800 shadow-sm">
-              <h3 className="font-black text-xl text-gray-900 dark:text-gray-100 mb-2">설정 및 데이터</h3>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-8 font-medium">데이터는 기기 내부 저장소에 보관됩니다.</p>
+              <h3 className="font-black text-xl text-gray-900 dark:text-gray-100 mb-2">데이터 요약</h3>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-8 font-medium">기기 내부 로컬 저장소 통계입니다.</p>
               
               <div className="space-y-4">
                 <div className="p-5 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl flex items-center justify-between">
@@ -347,6 +408,8 @@ const App: React.FC = () => {
                       setInventory([]);
                       setMarts([{ id: 1, name: '네이버스토어' }]);
                       localStorage.clear();
+                      setApiKey("");
+                      window.location.reload();
                     }
                   }}
                   className="w-full py-5 text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-3xl font-black text-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
